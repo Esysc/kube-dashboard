@@ -33,7 +33,6 @@ A web-based dashboard for monitoring logs from multiple Kubernetes pods and cont
    python app.py
    ```
 
-```markdown
 # Kubernetes Multi-Log Dashboard
 
 A web-based dashboard for monitoring logs from multiple Kubernetes pods and containers in real-time. This tool allows you to open up to 4 separate log windows, each streaming logs from a specific pod and container, with proper isolation between streams.
