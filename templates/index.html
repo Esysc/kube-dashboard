@@ -31,6 +31,11 @@
       background: #ff1744; color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 1.1em; cursor: pointer; margin-left: auto;
     }
     .window-header button.close-btn:hover { background: #d50000; }
+    .cluster-name {
+      font-size: 1rem;
+      color: #ffd369;
+      margin-left: auto; /* Pushes the element to the right */
+    }
     .logs {
       flex: 1 1 auto;
       overflow-y: auto;
@@ -56,6 +61,7 @@
       <input type="text" id="namespaceInput" placeholder="e.g. default" required>
       <button type="submit">Load Pods</button>
     </form>
+    <span class="cluster-name" id="clusterName">Loading cluster name...</span>
   </div>
   <button id="addWindowBtn" disabled>Add Log Window</button>
   <div class="log-windows" id="logWindows"></div>
@@ -67,6 +73,21 @@
     let currentNamespace = '';
     let windowCount = 0;
     const logWindows = {};
+
+    // Fetch and display the cluster name
+    async function fetchClusterName() {
+      try {
+        const response = await fetch('/cluster-name');
+        const data = await response.text();
+        document.getElementById('clusterName').textContent = `Cluster: ${data}`;
+      } catch (error) {
+        console.error('Failed to fetch cluster name:', error);
+        document.getElementById('clusterName').textContent = 'Cluster: Unknown';
+      }
+    }
+
+    // Call the function to fetch the cluster name when the page loads
+    fetchClusterName();
 
     document.getElementById('namespaceForm').addEventListener('submit', async function(e) {
       e.preventDefault();

@@ -69,6 +69,28 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/cluster-name')
+def get_cluster_name():
+    """
+    Returns the name of the Kubernetes cluster.
+
+    This function retrieves the cluster name from the Kubernetes configuration
+    or a predefined value if the cluster name is not available.
+
+    Returns:
+        str: The name of the Kubernetes cluster.
+    """
+    try:
+        # Retrieve the cluster name from the Kubernetes configuration
+        _, active_context = config.list_kube_config_contexts()
+        cluster_name = active_context.get('context', {}).get('cluster', 'Unknown Cluster')
+    except config.ConfigException as e:
+        print(f"Error retrieving cluster name: {e}")
+        cluster_name = "Unknown Cluster"
+
+    return cluster_name
+
+
 @app.route('/pods/<namespace>')
 def list_pods(namespace):
     """
