@@ -91,6 +91,27 @@
       });
     }
 
+    function removeLogWindow(windowId) {
+      const win = logWindows[windowId];
+      if (!win) return;
+
+      // Stop the log stream for this window
+      socket.emit('stop', { room: win.room });
+
+      // Remove the window from the DOM
+      const windowDiv = document.getElementById(windowId);
+      if (windowDiv) {
+        windowDiv.remove();
+      }
+
+      // Remove the window from the logWindows object
+      delete logWindows[windowId];
+
+      // Decrement the window count and update the Add Window button
+      windowCount--;
+      updateAddButton();
+    }
+
     function addLogWindow() {
       const windowId = 'win_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
       windowCount++;
