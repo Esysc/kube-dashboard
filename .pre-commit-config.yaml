@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/hhatto/autopep8
+    rev: v2.3.2
+    hooks:
+      - id: autopep8
+        args: ["--diff"]
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        # Currently it is not possible setting the max-line-length in the pyproject.toml.
+        # The parameter is passed trough the command line as a decision to not use any other
+        # additional configuration file (flake8rc or tox.ini). This is a workaround until the issue is fixed.
+        args: ["--max-line-length=120"]
+
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: python
+        types: [python]
+        stages: [pre-commit]
