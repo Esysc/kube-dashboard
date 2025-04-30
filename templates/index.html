@@ -50,6 +50,26 @@
     .pod-label { color: #00adb5; font-weight: bold; margin-right: 8px; }
     .container-label { color: #ffd369; margin-right: 8px; }
     .timestamp { color: #888; font-size: 0.92em; margin-right: 8px; }
+    .spinner {
+      display: none; /* Hidden by default */
+      border: 4px solid #f3f3f3; /* Light grey */
+      border-top: 4px solid #00adb5; /* Blue */
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+
+      /* Center the spinner */
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000; /* Ensure it appears above other elements */
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
     @media (max-width: 900px) { .log-window { max-width: 100vw; min-width: 98vw; } .log-windows { margin-left: 0; } }
   </style>
 </head>
@@ -60,6 +80,7 @@
       <label for="namespaceInput">Namespace:</label>
       <input type="text" id="namespaceInput" placeholder="e.g. default" required>
       <button type="submit">Load Pods</button>
+      <div class="spinner" id="spinner"></div>
     </form>
     <span class="cluster-name" id="clusterName">Loading cluster name...</span>
   </div>
@@ -91,13 +112,27 @@
 
     document.getElementById('namespaceForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      const spinner = document.getElementById('spinner');
       const ns = document.getElementById('namespaceInput').value.trim();
       if (!ns) return;
-      currentNamespace = ns;
-      const res = await fetch(`/pods/${encodeURIComponent(ns)}`);
-      availablePods = await res.json();
-      document.getElementById('addWindowBtn').disabled = availablePods.length === 0;
-      Object.keys(logWindows).forEach(wid => removeLogWindow(wid));
+      // Show the spinner
+      spinner.style.display = 'inline-block';
+      try {
+        currentNamespace = ns;
+        const res = await fetch(`/pods/${encodeURIComponent(ns)}`);
+        availablePods = await res.json();
+
+        // Enable the "Add Log Window" button if pods are available
+        document.getElementById('addWindowBtn').disabled = availablePods.length === 0;
+
+        // Clear existing log windows
+        Object.keys(logWindows).forEach(wid => removeLogWindow(wid));
+      } catch (error) {
+        console.error('Failed to load pods:', error);
+      } finally {
+        // Hide the spinner
+        spinner.style.display = 'none';
+      }
     });
 
     document.getElementById('addWindowBtn').onclick = function() {
