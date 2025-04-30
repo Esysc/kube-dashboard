@@ -39,9 +39,7 @@
       background: #181c20;
       border-radius: 0 0 8px 8px;
       font-family: 'Fira Mono', monospace;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
+      display: flex; flex-direction: column; justify-content: flex-start;
     }
     .log-line { margin-bottom: 2px; padding: 2px 0; white-space: pre-wrap; border-left: 3px solid #00adb5; padding-left: 8px; }
     .pod-label { color: #00adb5; font-weight: bold; margin-right: 8px; }
@@ -86,6 +84,13 @@
       addLogWindow();
     };
 
+    function isContainerSelected(pod, container, excludeWindowId) {
+      return Object.keys(logWindows).some(id => {
+        const win = logWindows[id];
+        return win.pod === pod && win.container === container && id !== excludeWindowId;
+      });
+    }
+
     function addLogWindow() {
       const windowId = 'win_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
       windowCount++;
@@ -100,7 +105,7 @@
       const containerSelect = document.createElement('select');
       const firstPod = availablePods[0];
       containerSelect.innerHTML = firstPod.containers
-        .filter(c => !isContainerSelected(firstPod.pod, c))
+        .filter(c => !isContainerSelected(firstPod.pod, c, windowId))
         .map(c => `<option value="${c}">${c}</option>`)
         .join('');
       containerSelect.className = 'container-select';
@@ -139,8 +144,6 @@
         room: windowId
       };
 
-      updateSelectedContainers();
-
       socket.emit('start', {
         namespace: currentNamespace,
         pod: podSelect.value,
@@ -148,53 +151,73 @@
         room: windowId
       });
 
-      podSelect.onchange = function () {
-        const podName = podSelect.value;
-        const podObj = availablePods.find(p => p.pod === podName);
-        containerSelect.innerHTML = podObj.containers
-          .filter(c => !isContainerSelected(podName, c))
-          .map(c => `<option value="${c}">${c}</option>`)
-          .join('');
-        containerSelect.dispatchEvent(new Event('change'));
-      };
+      podSelect.addEventListener('change', function () {
+        const win = logWindows[windowId];
+        const newPod = podSelect.value;
+        const podObj = availablePods.find(p => p.pod === newPod);
 
-      containerSelect.onchange = function () {
-        logWindows[windowId].container = containerSelect.value;
-        logWindows[windowId].pod = podSelect.value;
-        logWindows[windowId].logs = [];
-        logsDiv.innerHTML = '';
+        const currentContainer = win.container;
+        const containerExistsInNewPod = podObj.containers.includes(currentContainer);
+
+        const availableContainers = podObj.containers.filter(c =>
+          !isContainerSelected(newPod, c, windowId) || c === currentContainer
+        );
+
+        if (availableContainers.length > 0) {
+          containerSelect.innerHTML = availableContainers.map(c =>
+            `<option value="${c}" ${containerExistsInNewPod && c === currentContainer ? 'selected' : ''}>${c}</option>`
+          ).join('');
+        } else {
+          containerSelect.innerHTML = podObj.containers.map(c =>
+            `<option value="${c}" disabled>${c} (in use)</option>`
+          ).join('');
+        }
+
+        win.pod = newPod;
+        win.container = containerExistsInNewPod ? currentContainer :
+          (availableContainers.length > 0 ? availableContainers[0] : podObj.containers[0]);
+
+        if (containerSelect.value !== win.container && !containerSelect.options[containerSelect.selectedIndex].disabled) {
+          containerSelect.value = win.container;
+        }
+
+        if (!containerExistsInNewPod || containerSelect.value !== currentContainer) {
+          containerChanged(win);
+        }
+      });
+
+      containerSelect.addEventListener('change', function () {
+        const win = logWindows[windowId];
+        if (containerSelect.options[containerSelect.selectedIndex].disabled) return;
+
+        win.container = containerSelect.value;
+        containerChanged(win);
         updateSelectedContainers();
-        socket.emit('stop', { room: windowId });
-        socket.emit('start', {
-          namespace: currentNamespace,
-          pod: podSelect.value,
-          container: containerSelect.value,
-          room: windowId
-        });
-      };
+      });
 
-      searchInput.oninput = function () {
+      searchInput.addEventListener('input', function () {
         logWindows[windowId].search = searchInput.value.toLowerCase();
         renderLogs(windowId);
-      };
+      });
 
-      closeBtn.onclick = function () {
+      closeBtn.addEventListener('click', function () {
         removeLogWindow(windowId);
-      };
+      });
 
+      updateSelectedContainers();
       updateAddButton();
     }
 
-    function removeLogWindow(windowId) {
-      const win = document.getElementById(windowId);
-      if (win) win.remove();
-      if (logWindows[windowId]) {
-        socket.emit('stop', { room: windowId });
-        delete logWindows[windowId];
-        windowCount--;
-        updateSelectedContainers();
-        updateAddButton();
-      }
+    function containerChanged(win) {
+      win.logs = [];
+      win.logsDiv.innerHTML = '';
+      socket.emit('stop', { room: win.room });
+      socket.emit('start', {
+        namespace: currentNamespace,
+        pod: win.pod,
+        container: win.container,
+        room: win.room
+      });
     }
 
     function updateSelectedContainers() {
@@ -209,17 +232,26 @@
       Object.values(logWindows).forEach(win => {
         const podName = win.pod;
         const podObj = availablePods.find(p => p.pod === podName);
-        if (podObj) {
-          win.containerSelect.innerHTML = podObj.containers
-            .filter(c => !selectedContainers[podName] || !selectedContainers[podName].has(c) || c === win.container)
-            .map(c => `<option value="${c}">${c}</option>`)
-            .join('');
+        if (!podObj) return;
+
+        const currentSelection = win.container;
+        const currentSelectionIsValid = podObj.containers.includes(currentSelection);
+
+        const options = podObj.containers
+          .filter(c => !selectedContainers[podName] || !selectedContainers[podName].has(c) || c === currentSelection)
+          .map(c => `<option value="${c}" ${c === currentSelection ? 'selected' : ''}>${c}</option>`)
+          .join('');
+
+        win.containerSelect.innerHTML = options;
+
+        if (!currentSelectionIsValid && win.containerSelect.options.length > 0) {
+          win.container = win.containerSelect.options[0].value;
+          win.containerSelect.value = win.container;
+          if (win.container !== currentSelection) {
+            containerChanged(win);
+          }
         }
       });
-    }
-
-    function isContainerSelected(pod, container) {
-      return Object.values(logWindows).some(win => win.pod === pod && win.container === container);
     }
 
     function updateAddButton() {
@@ -251,30 +283,36 @@
       return now.toLocaleTimeString();
     }
 
-    // Only update the correct window!
     socket.on('log', data => {
-      const windowId = data.room;
+      const windowId = Object.keys(logWindows).find(id => logWindows[id].room === data.room);
+      if (!windowId) return;
+
       const win = logWindows[windowId];
-      if (!win) return;
-      win.logs.unshift({
-        pod: data.pod,
-        container: data.container,
-        line: data.line,
-        time: getTime()
-      });
-      if (!win.search) {
-        const div = document.createElement('div');
-        div.className = 'log-line';
-        div.innerHTML = `<span class="pod-label">[${data.pod}]</span>` +
-                        `<span class="container-label">[${data.container}]</span>` +
-                        `<span class="timestamp">${getTime()}</span>` +
-                        data.line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        win.logsDiv.insertBefore(div, win.logsDiv.firstChild);
-        win.logsDiv.scrollTop = 0;
-      } else {
-        renderLogs(windowId);
+      // Check if the log belongs to the current pod and container
+      if (data.pod === win.pod && data.container === win.container) {
+        win.logs.unshift({
+          pod: data.pod,
+          container: data.container,
+          line: data.line,
+          time: getTime()
+        });
+
+        // Render the log immediately if there's no search filter
+        if (!win.search) {
+          const div = document.createElement('div');
+          div.className = 'log-line';
+          div.innerHTML = `<span class="pod-label">[${data.pod}]</span>` +
+                          `<span class="container-label">[${data.container}]</span>` +
+                          `<span class="timestamp">${getTime()}</span>` +
+                          data.line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          win.logsDiv.insertBefore(div, win.logsDiv.firstChild);
+          win.logsDiv.scrollTop = 0;
+        } else {
+          renderLogs(windowId);
+        }
       }
     });
+
   </script>
 </body>
 </html>
