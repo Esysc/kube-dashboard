@@ -82,6 +82,19 @@ def serve_css(filename):
     return send_from_directory('templates/css', filename)
 
 
+@app.route('/js/<path:filename>')
+def serve_js(filename):
+    """
+    Serves Javascript files from the 'templates/js' directory.
+    This function is used to serve Javascript files for the web application.
+    Args:
+        filename (str): The name of the Javascript file to serve.
+    Returns:
+        Response: The Javascript file served from the 'templates/js' directory.
+    """
+    return send_from_directory('templates/js', filename)
+
+
 @app.route('/cluster-name')
 def get_cluster_name():
     """
