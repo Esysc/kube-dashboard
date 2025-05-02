@@ -42,7 +42,7 @@ Note:
       for in-cluster execution.
 """
 import threading
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_from_directory
 from flask_socketio import SocketIO, join_room, leave_room
 from kubernetes import client, config, watch
 
@@ -67,6 +67,19 @@ def index():
         Response: The rendered HTML content of the 'index.html' template.
     """
     return render_template('index.html')
+
+
+@app.route('/css/<path:filename>')
+def serve_css(filename):
+    """
+    Serves CSS files from the 'templates/css' directory.
+    This function is used to serve CSS files for the web application.
+    Args:
+        filename (str): The name of the CSS file to serve.
+    Returns:
+        Response: The CSS file served from the 'templates/css' directory.
+    """
+    return send_from_directory('templates/css', filename)
 
 
 @app.route('/cluster-name')
