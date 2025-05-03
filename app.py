@@ -42,6 +42,7 @@ Note:
       for in-cluster execution.
 """
 import os
+import argparse
 import threading
 import time
 from unittest.mock import MagicMock
@@ -284,4 +285,15 @@ def handle_stop(data):
 
 
 if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Run the Kubernetes Dashboard application.")
+    parser.add_argument(
+        '--port',
+        type=int,
+        default=int(os.getenv("PORT", "5000")),  # Default to PORT env var or 5000
+        help="Port to run the application on (default: 5000 or PORT env var)"
+    )
+    args = parser.parse_args()
+
+    # Run the application on the specified port
+    socketio.run(app, host="0.0.0.0", port=args.port, debug=True)
