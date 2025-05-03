@@ -48,6 +48,7 @@ import time
 from unittest.mock import MagicMock
 from flask import Flask, render_template, jsonify, send_from_directory
 from flask_socketio import SocketIO, join_room, leave_room
+import eventlet
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod, V1ObjectMeta, V1PodSpec, V1Container
 
@@ -316,5 +317,6 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
+    eventlet.monkey_patch()  # Ensure compatibility with eventlet
     # Run the application on the specified port
     socketio.run(app, host="0.0.0.0", port=args.port, debug=True)
