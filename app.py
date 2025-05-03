@@ -74,14 +74,35 @@ if os.getenv("TEST_MODE") == "true":
         metadata=V1ObjectMeta(name="pod-2"),
         spec=V1PodSpec(
             containers=[
-                V1Container(name="container-3")
+                V1Container(name="container-3"),
+                V1Container(name="container-4")
+            ],
+            init_containers=[]
+        )
+    )
+    pod_3 = V1Pod(
+        metadata=V1ObjectMeta(name="pod-3"),
+        spec=V1PodSpec(
+            containers=[
+                V1Container(name="container-5"),
+                V1Container(name="container-6")
+            ],
+            init_containers=[]
+        )
+    )
+    pod_4 = V1Pod(
+        metadata=V1ObjectMeta(name="pod-4"),
+        spec=V1PodSpec(
+            containers=[
+                V1Container(name="container-7"),
+                V1Container(name="container-8")
             ],
             init_containers=[]
         )
     )
 
     # Mock the list_namespaced_pod method to return the mock pods
-    v1.list_namespaced_pod = MagicMock(return_value=MagicMock(items=[pod_1, pod_2]))
+    v1.list_namespaced_pod = MagicMock(return_value=MagicMock(items=[pod_1, pod_2, pod_3, pod_4]))
 else:
     # Load kube configuration for Kubernetes client
     config.load_kube_config()

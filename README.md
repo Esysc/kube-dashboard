@@ -68,13 +68,48 @@ A web-based dashboard for monitoring logs from multiple Kubernetes pods and cont
 
 3. Start the Flask server:
    ```bash
-   python app.py
+   python app.py --port 5000
+   ```
+   The port argument is optional, defaults to 5000 and can also be passed as an environment variable:
+   ```bash
+   export PORT=5000
    ```
 
 4. Open your browser and navigate to:
    ```
    http://localhost:5000
    ```
+
+## Testing
+
+To ensure the application is working as expected, follow these steps:
+
+1. **Manual Testing**:
+   - Start the Flask server:
+     ```bash
+     export TEST_MODE=true
+     python app.py --port 5000
+     ```
+   - Open your browser and navigate to `http://localhost:5000`.
+   - Verify that you can:
+     - Load pods from a Kubernetes namespace.
+     - Open up to 4 log windows.
+     - Stream logs in real-time for selected pods and containers.
+     - Filter logs using the search input.
+     - Dynamically select containers without duplication.
+
+2. **Integration Testing**:
+   - Ensure `kubectl` is configured correctly and can access your Kubernetes cluster.
+   - Test the interaction between the Flask backend and the Kubernetes API by loading pods and streaming logs.
+
+3. **Cross-Browser Testing**:
+   - Test the dashboard on multiple browsers (e.g., Chrome, Firefox, Edge) to ensure compatibility.
+
+4. **Responsive Design Testing**:
+   - Verify that the dashboard works well on both desktop and mobile devices.
+
+5. **Error Handling**:
+   - Test scenarios where the Kubernetes cluster is unreachable or invalid inputs are provided to ensure proper error messages are displayed.
 
 ## Usage
 
