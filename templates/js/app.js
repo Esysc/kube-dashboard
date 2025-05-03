@@ -76,6 +76,10 @@ function removeLogWindow(windowId) {
   // Decrement the window count and update the Add Window button
   windowCount--;
   updateAddButton();
+  // Update the selected containers
+  // to ensure that the container options are updated in other windows
+
+  updateSelectedContainers();
 }
 
 function addLogWindow() {
@@ -86,13 +90,28 @@ function addLogWindow() {
   windowDiv.id = windowId;
 
   const podSelect = document.createElement('select');
-  podSelect.innerHTML = availablePods.map(p => `<option value="${p.pod}">${p.pod}</option>`).join('');
+  const availablePodsWithContainers = availablePods.filter(p =>
+    p.containers.some(c => !isContainerSelected(p.pod, c, windowId))
+  );
+
+  if (availablePodsWithContainers.length === 0) {
+    alert('No available containers to add a new log window.');
+    windowCount--;
+    return;
+  }
+
+  podSelect.innerHTML = availablePodsWithContainers
+    .map(p => `<option value="${p.pod}">${p.pod}</option>`)
+    .join('');
   podSelect.className = 'pod-select';
 
   const containerSelect = document.createElement('select');
-  const firstPod = availablePods[0];
-  containerSelect.innerHTML = firstPod.containers
-    .filter(c => !isContainerSelected(firstPod.pod, c, windowId))
+  const firstPod = availablePodsWithContainers[0];
+  const availableContainers = firstPod.containers.filter(c =>
+    !isContainerSelected(firstPod.pod, c, windowId)
+  );
+
+  containerSelect.innerHTML = availableContainers
     .map(c => `<option value="${c}">${c}</option>`)
     .join('');
   containerSelect.className = 'container-select';
