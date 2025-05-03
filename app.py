@@ -69,30 +69,25 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/css/<path:filename>')
-def serve_css(filename):
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
     """
-    Serves CSS files from the 'templates/css' directory.
-    This function is used to serve CSS files for the web application.
-    Args:
-        filename (str): The name of the CSS file to serve.
-    Returns:
-        Response: The CSS file served from the 'templates/css' directory.
-    """
-    return send_from_directory('templates/css', filename)
+    Serves CSS and JavaScript files from their respective directories.
 
+    This function determines the file type based on the file extension
+    and serves the file from the appropriate directory.
 
-@app.route('/js/<path:filename>')
-def serve_js(filename):
-    """
-    Serves Javascript files from the 'templates/js' directory.
-    This function is used to serve Javascript files for the web application.
     Args:
-        filename (str): The name of the Javascript file to serve.
+        filename (str): The name of the file to serve.
+
     Returns:
-        Response: The Javascript file served from the 'templates/js' directory.
+        Response: The requested file served from the appropriate directory.
     """
-    return send_from_directory('templates/js', filename)
+    if filename.endswith('.css'):
+        return send_from_directory('templates/css', filename)
+    if filename.endswith('.js'):
+        return send_from_directory('templates/js', filename)
+    return "File type not supported", 400
 
 
 @app.route('/cluster-name')
