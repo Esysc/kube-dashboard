@@ -41,18 +41,50 @@ Note:
     - Use `config.load_kube_config()` for local development or `config.load_incluster_config()`
       for in-cluster execution.
 """
+import os
 import threading
+import time
+from unittest.mock import MagicMock
 from flask import Flask, render_template, jsonify, send_from_directory
 from flask_socketio import SocketIO, join_room, leave_room
 from kubernetes import client, config, watch
-
+from kubernetes.client import V1Pod, V1ObjectMeta, V1PodSpec, V1Container
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Load kube config (use load_incluster_config() if running in cluster)
-config.load_kube_config()
-v1 = client.CoreV1Api()
+# Check if running in test mode
+if os.getenv("TEST_MODE") == "true":
+    # Mock Kubernetes client
+    v1 = MagicMock()
+
+    # Create mock pods
+    pod_1 = V1Pod(
+        metadata=V1ObjectMeta(name="pod-1"),
+        spec=V1PodSpec(
+            containers=[
+                V1Container(name="container-1"),
+                V1Container(name="container-2")
+            ],
+            init_containers=[]
+        )
+    )
+    pod_2 = V1Pod(
+        metadata=V1ObjectMeta(name="pod-2"),
+        spec=V1PodSpec(
+            containers=[
+                V1Container(name="container-3")
+            ],
+            init_containers=[]
+        )
+    )
+
+    # Mock the list_namespaced_pod method to return the mock pods
+    v1.list_namespaced_pod = MagicMock(return_value=MagicMock(items=[pod_1, pod_2]))
+else:
+    # Load kube configuration for Kubernetes client
+    config.load_kube_config()
+    v1 = client.CoreV1Api()
 
 
 @app.route('/')
@@ -101,6 +133,9 @@ def get_cluster_name():
     Returns:
         str: The name of the Kubernetes cluster.
     """
+    if os.getenv("TEST_MODE") == "true":
+        # Return a fake cluster name in test mode
+        return "Mock Cluster"
     try:
         # Retrieve the cluster name from the Kubernetes configuration
         _, active_context = config.list_kube_config_contexts()
@@ -170,6 +205,16 @@ def stream_logs(room, namespace, pod, container):
         - The function streams logs in real-time using the Kubernetes Watch API.
         - Only the last 100 lines of logs are fetched initially.
     """
+    if os.getenv("TEST_MODE") == "true":
+        for i in range(10):  # Emit 10 fake log lines
+            socketio.emit('log', {
+                'pod': pod,
+                'container': container,
+                'line': f"Fake log line {i} from {pod}/{container}",
+                'room': room
+            }, room=room)
+            time.sleep(1)  # Simulate log streaming delay
+        return
 
     w = watch.Watch()
     try:
