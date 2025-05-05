@@ -189,6 +189,7 @@ function addLogWindow() {
 
     if (!containerExistsInNewPod || containerSelect.value !== currentContainer) {
       containerChanged(win);
+      updateSelectedContainers();
     }
   });
 
