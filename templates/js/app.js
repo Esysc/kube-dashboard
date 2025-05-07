@@ -17,19 +17,39 @@ async function fetchClusterName() {
   }
 }
 
-// Call the function to fetch the cluster name when the page loads
-fetchClusterName();
+async function fetchNamespaces() {
+  const namespaceSelect = document.getElementById('namespaceSelect');
+  try {
+    const response = await fetch('/namespaces');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const namespaces = await response.json();
+    console.log('Namespaces fetched:', namespaces); // Debugging line
+    namespaceSelect.innerHTML = namespaces.map(ns => `<option value="${ns}">${ns}</option>`).join('');
+  } catch (error) {
+    console.error('Failed to fetch namespaces:', error);
+    namespaceSelect.innerHTML = '<option value="" disabled>Error loading namespaces</option>';
+  }
+}
 
-document.getElementById('namespaceForm').addEventListener('submit', async function(e) {
+// Call these functions when the page loads
+fetchClusterName();
+fetchNamespaces();
+
+// Handle form submission for loading pods
+document.getElementById('namespaceForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const spinner = document.getElementById('spinner');
-  const ns = document.getElementById('namespaceInput').value.trim();
-  if (!ns) return;
+  const namespace = document.getElementById('namespaceSelect').value;
+  if (!namespace) return;
+
   // Show the spinner
   spinner.style.display = 'inline-block';
+
   try {
-    currentNamespace = ns;
-    const res = await fetch(`/pods/${encodeURIComponent(ns)}`);
+    currentNamespace = namespace;
+    const res = await fetch(`/pods/${encodeURIComponent(namespace)}`);
     availablePods = await res.json();
 
     // Enable the "Add Log Window" button if pods are available

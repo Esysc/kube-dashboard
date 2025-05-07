@@ -119,6 +119,15 @@ fastapi_app.mount("/assets/js", StaticFiles(directory="templates/js"), name="js"
 # --- Kubernetes client setup (mock/test mode or real) ---
 if os.getenv("TEST_MODE") == "true":
     v1 = MagicMock()
+    # Mock namespaces
+    mock_namespaces = [
+        V1ObjectMeta(name="default"),
+        V1ObjectMeta(name="kube-system"),
+        V1ObjectMeta(name="mock-namespace-1"),
+        V1ObjectMeta(name="mock-namespace-2")
+    ]
+    v1.list_namespace = MagicMock(return_value=MagicMock(items=mock_namespaces))
+
     # Create mock pods
     pod_1 = V1Pod(
         metadata=V1ObjectMeta(name="pod-1"),
@@ -178,6 +187,23 @@ async def get_cluster_name():
         print(f"Error retrieving cluster name: {e}")
         cluster_name = "Unknown Cluster"
     return cluster_name
+
+
+@fastapi_app.get("/namespaces")
+async def list_namespaces():
+    """
+    List all available namespaces in the Kubernetes cluster.
+    """
+    if os.getenv("TEST_MODE") == "true":
+        # Return mock namespaces in test mode
+        return ["default", "kube-system", "mock-namespace-1", "mock-namespace-2"]
+
+    try:
+        namespaces = v1.list_namespace().items
+        return [ns.metadata.name for ns in namespaces]
+    except client.exceptions.ApiException as e:
+        print(f"Error retrieving namespaces: {e}")
+        return []
 
 
 @fastapi_app.get("/pods/{namespace}")

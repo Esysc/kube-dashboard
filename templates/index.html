@@ -11,8 +11,10 @@
   <div class="header">
     <h1>Kubernetes Multi-Log Dashboard</h1>
     <form class="namespace-form" id="namespaceForm">
-      <label for="namespaceInput">Namespace:</label>
-      <input type="text" id="namespaceInput" placeholder="e.g. default" required>
+      <label for="namespaceSelect">Namespace:</label>
+      <select id="namespaceSelect" required>
+        <option value="" disabled selected>Loading namespaces...</option>
+      </select>
       <button type="submit">Load Pods</button>
       <div class="spinner" id="spinner"></div>
     </form>
