@@ -177,46 +177,44 @@ function addLogWindow() {
     room: windowId
   });
 
+  // Update container dropdown when pod is changed
   podSelect.addEventListener('change', function () {
     const win = logWindows[windowId];
     const newPod = podSelect.value;
     const podObj = availablePods.find(p => p.pod === newPod);
 
-    const currentContainer = win.container;
-    const containerExistsInNewPod = podObj.containers.includes(currentContainer);
+    if (!podObj) return;
 
     const availableContainers = podObj.containers.filter(c =>
-      !isContainerSelected(newPod, c, windowId) || c === currentContainer
+      !isContainerSelected(newPod, c, windowId)
     );
 
     if (availableContainers.length > 0) {
-      containerSelect.innerHTML = availableContainers.map(c =>
-        `<option value="${c}" ${containerExistsInNewPod && c === currentContainer ? 'selected' : ''}>${c}</option>`
-      ).join('');
+      containerSelect.innerHTML = availableContainers
+        .map(c => `<option value="${c}">${c}</option>`)
+        .join('');
+      win.container = availableContainers[0]; // Automatically select the first container
+      // Force the container select to update its value.
+      // Pods may contain containers having same name.
+      // We need to ensure the selected container is refreshed.
+      containerSelect.value = win.container;
     } else {
-      containerSelect.innerHTML = podObj.containers.map(c =>
-        `<option value="${c}" disabled>${c} (in use)</option>`
-      ).join('');
+      containerSelect.innerHTML = '<option value="" disabled>No containers available</option>';
+      win.container = null;
     }
 
     win.pod = newPod;
-    win.container = containerExistsInNewPod ? currentContainer :
-      (availableContainers.length > 0 ? availableContainers[0] : podObj.containers[0]);
 
-    if (containerSelect.value !== win.container && !containerSelect.options[containerSelect.selectedIndex].disabled) {
-      containerSelect.value = win.container;
-    }
-
-    if (!containerExistsInNewPod || containerSelect.value !== currentContainer) {
+    // Restart log streaming with the new pod and container
+    if (win.container) {
       containerChanged(win);
-      updateSelectedContainers();
+      containerSelect.dispatchEvent(new Event('change'));
     }
   });
 
   containerSelect.addEventListener('change', function () {
     const win = logWindows[windowId];
     if (containerSelect.options[containerSelect.selectedIndex].disabled) return;
-
     win.container = containerSelect.value;
     containerChanged(win);
     updateSelectedContainers();
