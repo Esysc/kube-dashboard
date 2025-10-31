@@ -5,6 +5,16 @@
 # Edit this file with your cluster details before running scripts
 ################################################################################
 
+# ==================== EARLY VALIDATION ====================
+
+# Check AWS_PROFILE immediately
+if [ -z "$AWS_PROFILE" ]; then
+    echo "ERROR: AWS_PROFILE environment variable is not set."
+    echo "       Please set it before running the script:"
+    echo "       export AWS_PROFILE=<profile-name>"
+    exit 1
+fi
+
 # ==================== CLUSTER CONFIGURATION ====================
 
 # Cluster name - priority: 1) ENV var 2) kubeconfig current-context 3) default value
